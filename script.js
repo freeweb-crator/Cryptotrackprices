@@ -1,34 +1,37 @@
-let priceHistory = [];
-
 async function fetchCryptoPrices() {
-    const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd');
-    const data = await response.json();
-    
-    let btcPrice = data.bitcoin.usd;
-    let ethPrice = data.ethereum.usd;
-
-    // Store prices in history (limit to 10 for forecasting)
-    priceHistory.push(btcPrice);
-    if (priceHistory.length > 10) priceHistory.shift();
-
-    let btcForecast = forecastPrice(priceHistory);
-
-    document.getElementById('crypto-container').innerHTML = `
-        <p>Bitcoin: $${btcPrice}</p>
-        <p>Ethereum: $${ethPrice}</p>
-        <p><strong>Bitcoin Forecast:</strong> $${btcForecast}</p>
-    `;
-}
-
-// Simple Moving Average (SMA) Forecast
-function forecastPrice(history) {
-    if (history.length < 2) return "Not enough data";
-    let sum = history.reduce((a, b) => a + b, 0);
-    return (sum / history.length).toFixed(2); // Average price
+    try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd');
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        
+        const data = await response.json();
+        
+        document.getElementById('crypto-container').innerHTML = `
+            <p>Bitcoin: $${data.bitcoin.usd}</p>
+            <p>Ethereum: $${data.ethereum.usd}</p>
+        `;
+    } catch (error) {
+        console.error("Error fetching crypto prices:", error);
+        document.getElementById('crypto-container').innerHTML = `<p>Error loading prices. Try again later.</p>`;
+    }
 }
 
 fetchCryptoPrices();
 setInterval(fetchCryptoPrices, 10000);
+
+console.log("Crypto price fetching initialized.");
+
+function displayLastUpdatedTime() {
+    const now = new Date();
+    document.getElementById('last-updated').textContent = `Last updated: ${now.toLocaleTimeString()}`;
+}
+
+displayLastUpdatedTime();
+setInterval(displayLastUpdatedTime, 1000);
+
+//---------------------------------------------------------------------------------------
+// Added Code: Transaction Handling
+//---------------------------------------------------------------------------------------
+
 document.getElementById('transaction-form').addEventListener('submit', function(event) {
     event.preventDefault();
 
@@ -43,7 +46,6 @@ document.getElementById('transaction-form').addEventListener('submit', function(
 
     let transaction = { crypto, amount, type, date: new Date().toLocaleString() };
 
-    // Get stored transactions or create an empty array
     let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
     transactions.push(transaction);
     localStorage.setItem('transactions', JSON.stringify(transactions));
@@ -71,5 +73,4 @@ function deleteTransaction(index) {
     displayTransactions();
 }
 
-// Load transactions on page load
-displayTransactions();
+displayTransactions(); // Load transactions on page load
