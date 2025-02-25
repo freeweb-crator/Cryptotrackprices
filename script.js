@@ -1,4 +1,6 @@
 let priceHistory = [];
+let timeLabels = [];
+let btcChart;
 
 async function fetchCryptoPrices() {
     try {
@@ -10,9 +12,15 @@ async function fetchCryptoPrices() {
         let btcPrice = data.bitcoin.usd;
         let ethPrice = data.ethereum.usd;
 
-        // Store Bitcoin prices for forecasting
+        // Store Bitcoin prices for forecasting & chart
+        let now = new Date().toLocaleTimeString();
         priceHistory.push(btcPrice);
-        if (priceHistory.length > 10) priceHistory.shift();
+        timeLabels.push(now);
+
+        if (priceHistory.length > 20) { 
+            priceHistory.shift(); // Keep the last 20 prices
+            timeLabels.shift(); 
+        }
 
         let btcForecast = forecastPrice(priceHistory);
 
@@ -21,6 +29,8 @@ async function fetchCryptoPrices() {
             <p>Ethereum: $${ethPrice}</p>
             <p><strong>Bitcoin Forecast:</strong> ${btcForecast ? `$${btcForecast}` : "Not enough data"}</p>
         `;
+
+        updateChart();
     } catch (error) {
         console.error("Error fetching crypto prices:", error);
         document.getElementById('crypto-container').innerHTML = `<p>Error loading prices. Try again later.</p>`;
@@ -31,12 +41,47 @@ async function fetchCryptoPrices() {
 function forecastPrice(history) {
     if (history.length < 2) return null;
     let sum = history.reduce((a, b) => a + b, 0);
-    return (sum / history.length).toFixed(2); // Average price
+    return (sum / history.length).toFixed(2);
+}
+
+// Initialize Bitcoin Chart
+function createChart() {
+    let ctx = document.getElementById('btcChart').getContext('2d');
+    btcChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: timeLabels,
+            datasets: [{
+                label: 'Bitcoin Price (USD)',
+                data: priceHistory,
+                borderColor: 'orange',
+                borderWidth: 2,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { display: true },
+                y: { beginAtZero: false }
+            }
+        }
+    });
+}
+
+// Update the Chart
+function updateChart() {
+    if (btcChart) {
+        btcChart.data.labels = timeLabels;
+        btcChart.data.datasets[0].data = priceHistory;
+        btcChart.update();
+    }
 }
 
 // Transaction tracking
 document.addEventListener("DOMContentLoaded", function () {
-    displayTransactions(); // Load transactions when page loads
+    createChart();
+    displayTransactions();
 
     document.getElementById('transaction-form').addEventListener('submit', function(event) {
         event.preventDefault();
@@ -52,7 +97,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         let transaction = { crypto, amount, type, date: new Date().toLocaleString() };
 
-        // Get stored transactions or create an empty array
         let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
         transactions.push(transaction);
         localStorage.setItem('transactions', JSON.stringify(transactions));
