@@ -29,3 +29,47 @@ function forecastPrice(history) {
 
 fetchCryptoPrices();
 setInterval(fetchCryptoPrices, 10000);
+document.getElementById('transaction-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    let crypto = document.getElementById('crypto').value;
+    let amount = document.getElementById('amount').value;
+    let type = document.getElementById('type').value;
+
+    if (!amount || amount <= 0) {
+        alert("Please enter a valid amount.");
+        return;
+    }
+
+    let transaction = { crypto, amount, type, date: new Date().toLocaleString() };
+
+    // Get stored transactions or create an empty array
+    let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+    transactions.push(transaction);
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+
+    document.getElementById('amount').value = "";
+    displayTransactions();
+});
+
+function displayTransactions() {
+    let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+    let transactionList = document.getElementById('transaction-list');
+    transactionList.innerHTML = "";
+
+    transactions.forEach((t, index) => {
+        let li = document.createElement('li');
+        li.innerHTML = `${t.date} - ${t.crypto} - ${t.type} ${t.amount} <button onclick="deleteTransaction(${index})">❌</button>`;
+        transactionList.appendChild(li);
+    });
+}
+
+function deleteTransaction(index) {
+    let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+    transactions.splice(index, 1);
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+    displayTransactions();
+}
+
+// Load transactions on page load
+displayTransactions();
