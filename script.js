@@ -1,3 +1,5 @@
+let priceHistory = [];
+
 async function fetchCryptoPrices() {
     try {
         const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd');
@@ -5,14 +7,31 @@ async function fetchCryptoPrices() {
         
         const data = await response.json();
         
+        let btcPrice = data.bitcoin.usd;
+        let ethPrice = data.ethereum.usd;
+
+        // Store Bitcoin prices for forecasting
+        priceHistory.push(btcPrice);
+        if (priceHistory.length > 10) priceHistory.shift();
+
+        let btcForecast = forecastPrice(priceHistory);
+
         document.getElementById('crypto-container').innerHTML = `
-            <p>Bitcoin: $${data.bitcoin.usd}</p>
-            <p>Ethereum: $${data.ethereum.usd}</p>
+            <p>Bitcoin: $${btcPrice}</p>
+            <p>Ethereum: $${ethPrice}</p>
+            <p><strong>Bitcoin Forecast:</strong> ${btcForecast ? `$${btcForecast}` : "Not enough data"}</p>
         `;
     } catch (error) {
         console.error("Error fetching crypto prices:", error);
         document.getElementById('crypto-container').innerHTML = `<p>Error loading prices. Try again later.</p>`;
     }
+}
+
+// Simple Moving Average (SMA) Forecast
+function forecastPrice(history) {
+    if (history.length < 2) return null;
+    let sum = history.reduce((a, b) => a + b, 0);
+    return (sum / history.length).toFixed(2); // Average price
 }
 
 // Transaction tracking
