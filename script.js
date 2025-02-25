@@ -15,43 +15,32 @@ async function fetchCryptoPrices() {
     }
 }
 
-fetchCryptoPrices();
-setInterval(fetchCryptoPrices, 10000);
+// Transaction tracking
+document.addEventListener("DOMContentLoaded", function () {
+    displayTransactions(); // Load transactions when page loads
 
-console.log("Crypto price fetching initialized.");
+    document.getElementById('transaction-form').addEventListener('submit', function(event) {
+        event.preventDefault();
 
-function displayLastUpdatedTime() {
-    const now = new Date();
-    document.getElementById('last-updated').textContent = `Last updated: ${now.toLocaleTimeString()}`;
-}
+        let crypto = document.getElementById('crypto').value;
+        let amount = document.getElementById('amount').value;
+        let type = document.getElementById('type').value;
 
-displayLastUpdatedTime();
-setInterval(displayLastUpdatedTime, 1000);
+        if (!amount || amount <= 0) {
+            alert("Please enter a valid amount.");
+            return;
+        }
 
-//---------------------------------------------------------------------------------------
-// Added Code: Transaction Handling
-//---------------------------------------------------------------------------------------
+        let transaction = { crypto, amount, type, date: new Date().toLocaleString() };
 
-document.getElementById('transaction-form').addEventListener('submit', function(event) {
-    event.preventDefault();
+        // Get stored transactions or create an empty array
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+        transactions.push(transaction);
+        localStorage.setItem('transactions', JSON.stringify(transactions));
 
-    let crypto = document.getElementById('crypto').value;
-    let amount = document.getElementById('amount').value;
-    let type = document.getElementById('type').value;
-
-    if (!amount || amount <= 0) {
-        alert("Please enter a valid amount.");
-        return;
-    }
-
-    let transaction = { crypto, amount, type, date: new Date().toLocaleString() };
-
-    let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-    transactions.push(transaction);
-    localStorage.setItem('transactions', JSON.stringify(transactions));
-
-    document.getElementById('amount').value = "";
-    displayTransactions();
+        document.getElementById('amount').value = "";
+        displayTransactions();
+    });
 });
 
 function displayTransactions() {
@@ -73,4 +62,5 @@ function deleteTransaction(index) {
     displayTransactions();
 }
 
-displayTransactions(); // Load transactions on page load
+fetchCryptoPrices();
+setInterval(fetchCryptoPrices, 10000);
